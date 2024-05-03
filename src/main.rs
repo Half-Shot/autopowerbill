@@ -2,18 +2,15 @@ mod date;
 use std::fs::read_to_string;
 use crate::date::Date;
 use std::collections::HashMap;
-
-const USAGE_CHARGE: f32 = 0.0;
+use std::env;
 
 fn main() {
-    println!("Hello, world!");
-
-    let mut running_total_pence = USAGE_CHARGE;
+    let usage_cost = env::args().collect::<Vec<String>>().get(1).unwrap_or(&"0".to_string()).parse::<f32>().unwrap();
+    let mut running_total_pence = usage_cost;
     let costs = get_avg_costs();
     for (date, kwh) in get_power_usage() {
         running_total_pence += costs.get(&date).unwrap() * kwh;
     }
-
     println!("Calculated cost: £{:.2}", running_total_pence.ceil() / 100.0);
 }
 
