@@ -3,8 +3,8 @@ use rumqttc::{Client, MqttOptions, QoS};
 use rumqttc::Event::{Incoming, Outgoing};
 use rumqttc::v4::Publish;
 use serde::Deserialize;
-use std::fs::OpenOptions;
-use std::io::Write;
+use std::fs::File;
+use std::io::{BufWriter, Write};
 use std::sync::mpsc::Sender;
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
@@ -47,18 +47,28 @@ pub struct PowerUsage {
     pub kwh: f32,
 }
 
-pub fn start_power_scrape_thread(tx: Sender<PowerUsage>) -> JoinHandle<()> {
-    let mut mqttoptions = MqttOptions::new("rumqtt-async", "localhost", 1883);
-    mqttoptions.set_keep_alive(Duration::from_secs(5));
+pub struct Configuration {
+    pub client_id: String,
+    pub host: String,
+    pub port: Option<u16>,
+    pub topic: String,
+    pub file: File,
+}
+
+pub fn start_power_scrape_thread(config: Configuration, tx: Sender<PowerUsage>) -> JoinHandle<()> {
+    let mut mqttoptions = MqttOptions::new(
+        config.client_id,
+        config.host, 
+        config.port.unwrap_or(1883)
+    );
+
+    mqttoptions.set_keep_alive(Duration::from_secs(30));
     
     let (client, mut eventloop) = Client::new(mqttoptions, 10);
-    client.subscribe("tele/tasmota_D5E4EC/SENSOR", QoS::AtMostOnce).unwrap();
+    client.subscribe(config.topic, QoS::AtMostOnce).unwrap();
     
-    let mut f = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open("./powerusage.csv")
-        .unwrap();
+    // TODO: This should be conditional, but I haven't figured out how to make it so yet.
+    let mut buf = BufWriter::new(config.file);
 
     return thread::spawn(move || {
         for notification in eventloop.iter() {
@@ -67,7 +77,11 @@ pub fn start_power_scrape_thread(tx: Sender<PowerUsage>) -> JoinHandle<()> {
                     if let rumqttc::Packet::Publish(Publish { payload, .. }) = evt {
                         let status: PowerStatusPacket = serde_json::from_slice(&payload).unwrap();
                         let now = chrono::Utc::now();
-                        f.write(format!("{:},{:}\n", now.to_rfc3339(), status.energy.total).as_bytes()).unwrap();
+                        // Worrying but not an error.
+                        if let Err(e) = buf.write(format!("{:},{:}\n", now.to_rfc3339(), status.energy.total).as_bytes()) {
+                            println!("Failed to write to power scrape file: {:?}", e);
+                        }
+                        // This IS an error.
                         tx.send(PowerUsage { kwh: status.energy.total, date: now }).unwrap();
                     }
                 } 
