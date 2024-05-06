@@ -1,22 +1,24 @@
 use clap::Parser;
 
-/// Simple program to greet a person
+/// Monitors telemetry from a Tasmota Smart Plug and
+/// accurate records the costs for each period of use,
+/// using Octopus Agile energy prices.
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 pub struct Args {
-    /// Name of the person to greet
+    /// MQTT broker host name
     #[arg(long)]
     pub host: String,
-    /// Name of the person to greet
+    /// MQTT broker port
     #[arg(short, long)]
     pub port: Option<u16>,
-    /// Name of the person to greet
+    /// MQTT topic
     #[arg(short, long)]
     pub topic: String,
-    /// Name of the person to greet
+    /// Octopus Energy product code
     #[arg(long)]
     pub product_code: String,
-    /// Name of the person to greet
+    /// Octopus Energy tariff code
     #[arg(long)]
     pub tariff_code: String,
 }
