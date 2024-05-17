@@ -18,7 +18,7 @@ cargo run -- -h
 
 Monitors telemetry from a Tasmota Smart Plug and accurate records the costs for each period of use, using Octopus Agile energy prices
 
-Usage: autopowerbill [OPTIONS] --host <HOST> --topic <TOPIC> --product-code <PRODUCT_CODE> --tariff-code <TARIFF_CODE>
+Usage: autopowerbill [OPTIONS] --host <HOST> --topic <TOPIC> --product-code <PRODUCT_CODE> --tariff-code <TARIFF_CODE> --database <DATABASE>
 
 Options:
       --host <HOST>                  MQTT broker host name
@@ -26,6 +26,7 @@ Options:
   -t, --topic <TOPIC>                MQTT topic
       --product-code <PRODUCT_CODE>  Octopus Energy product code
       --tariff-code <TARIFF_CODE>    Octopus Energy tariff code
+      --database <DATABASE>          Postgres database connection string
   -h, --help                         Print help
   -V, --version                      Print version
 ```
@@ -33,7 +34,7 @@ Options:
 For example, you can (after running `cargo install`) do:
 
 ```sh
-autopowerbill --product-code "AGILE-24-04-03" --tariff-code "E-1R-AGILE-24-04-03-D" --topic  "tele/your-device-topic/SENSOR" --host 'your-broker-address'
+autopowerbill --product-code "AGILE-24-04-03" --tariff-code "E-1R-AGILE-24-04-03-D" --topic  "tele/your-device-topic/SENSOR" --host 'your-broker-address' --database 'postgres://connectionstring'
 ```
 
 to start recording data. Data is automatically recorded into two CSV files:
