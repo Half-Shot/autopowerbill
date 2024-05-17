@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Timelike, Utc};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -76,9 +76,11 @@ impl Octopus {
     }
 
     pub async fn get_price_for_period(&mut self, start_date: DateTime<Utc>, end_date: DateTime<Utc>) -> Result<(&PowerCost, Option<&PowerCost>), Box<dyn std::error::Error>> {
-        if (Utc::now() - self.last_fetch).num_hours() > 3 {
+        let now: DateTime<Utc> = Utc::now();
+        // We always fetch the prices at 16, because Octopus release new prices at 16:00
+        if (now - self.last_fetch).num_hours() > 3 || (now.hour() == 16 && self.last_fetch.hour() != 16) {
             self.power_costs = self.get_agile_prices().await?;
-            self.last_fetch = Utc::now();
+            self.last_fetch = now;
         }
         let cost1 = match self.power_costs.iter().find(|c| c.from <= start_date && c.to >= start_date) {
             Some(e) => Ok(e),

@@ -21,6 +21,9 @@ pub struct Args {
     /// Octopus Energy tariff code
     #[arg(long)]
     pub tariff_code: String,
+    /// Postgres database connection string
+    #[arg(long)]
+    pub database: String,
 }
 
 pub fn get_args() -> Args {

@@ -1,28 +1,27 @@
 mod octopus;
 mod powerscrape;
 mod cli;
+mod database;
+mod data;
+
+use data::PowerUsageCsvFormat;
+
 use chrono::{DateTime, Utc};
 use powerscrape::{start_power_scrape_thread, PowerUsage};
 use std::{fs::OpenOptions, io::Write};
 use std::sync::mpsc;
 
-struct PowerUsageCsvFormat {
-    date: DateTime<Utc>,
-    usage: f32,
-    total_usage: f32,
-    cost: f32,
-}
+use database::Database;
 
-impl ToString for PowerUsageCsvFormat {
-    fn to_string(&self) -> String {
-        format!("{:},{:},{:},{:}", self.date.to_rfc3339(), self.usage, self.total_usage, self.cost).to_string()
-    }
-}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>>  {
     let args = cli::get_args();    
     let (tx, rx) = mpsc::channel::<PowerUsage>();
+
+    let database = Database::new(args.database)?;
+
+    database.clone().ensure_schema().await?;
 
     let power_scrape_file = OpenOptions::new()
         .create(true)
@@ -68,7 +67,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>  {
             panic!("Usage should never drop!");
         }
 
-        if usage > 0.0 {
+        let data_value: PowerUsageCsvFormat = if usage > 0.0 {
             // Find the price that matches this period
             let usage_cost: f32 = match octopus.get_price_for_period(last_date, date).await {
                 Ok((matched_cost, Some(second_cost))) => {
@@ -89,11 +88,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>  {
                 },
             };
             println!("Calculated {:?} for {:?} ({:?} kwh)", usage_cost, date, kwh);
-            f.write(PowerUsageCsvFormat { date, usage, total_usage: kwh, cost: usage_cost }.to_string().as_bytes()).unwrap();
+            PowerUsageCsvFormat { date, usage, total_usage: kwh, cost: usage_cost }
         } else {
-            f.write(PowerUsageCsvFormat { date, usage, total_usage: kwh, cost: 0.0 }.to_string().as_bytes()).unwrap();
+           PowerUsageCsvFormat { date, usage, total_usage: kwh, cost: 0.0 }
+        };
+        if let Err(db_err) = database.clone().insert_new_data_value(&data_value).await {
+            println!("Failed to insert data into DB: {:?}", db_err);
         }
-
+        if let Err(csv_err) = f.write(&data_value.to_string().as_bytes()) {
+            println!("Failed to insert data into the CSV: {:?}", csv_err);
+        }
         last_power_reading = kwh;
         last_date = date;
     }
