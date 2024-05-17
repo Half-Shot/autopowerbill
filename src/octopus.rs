@@ -62,7 +62,7 @@ impl Octopus {
         }
     }
 
-    async fn get_agile_prices(self: &Self) -> Result<Vec<PowerCost>, Box<dyn std::error::Error>> {
+    async fn get_agile_prices(&self) -> Result<Vec<PowerCost>, Box<dyn std::error::Error>> {
         let url = format!("https://api.octopus.energy/v1/products/{:}/electricity-tariffs/{:}/standard-unit-rates/", self.product_code, self.tariff_code);
         let resp = reqwest::get(url)
         .await?
@@ -93,7 +93,7 @@ impl Octopus {
         if cost1.cost == cost2.cost {
             return Ok((cost1, None));
         }
-        return Ok((cost1, Some(cost2)));
+        Ok((cost1, Some(cost2)))
     }
     
 }

@@ -95,7 +95,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>  {
         if let Err(db_err) = database.clone().insert_new_data_value(&data_value).await {
             println!("Failed to insert data into DB: {:?}", db_err);
         }
-        if let Err(csv_err) = f.write(&data_value.to_string().as_bytes()) {
+        if let Err(csv_err) = f.write(data_value.to_string().as_bytes()) {
             println!("Failed to insert data into the CSV: {:?}", csv_err);
         }
         last_power_reading = kwh;

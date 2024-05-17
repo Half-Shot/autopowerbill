@@ -8,8 +8,8 @@ pub struct PowerUsageCsvFormat {
     pub cost: f32,
 }
 
-impl ToString for PowerUsageCsvFormat {
-    fn to_string(&self) -> String {
-        format!("{:},{:},{:},{:}\n", self.date.to_rfc3339(), self.usage, self.total_usage, self.cost).to_string()
+impl std::fmt::Display for PowerUsageCsvFormat {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+      writeln!(f, "{:},{:},{:},{:}", self.date.to_rfc3339(), self.usage, self.total_usage, self.cost)
     }
 }

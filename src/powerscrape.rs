@@ -70,7 +70,7 @@ pub fn start_power_scrape_thread(config: Configuration, tx: Sender<PowerUsage>) 
     // TODO: This should be conditional, but I haven't figured out how to make it so yet.
     let mut buf = BufWriter::new(config.file);
 
-    return thread::spawn(move || {
+    thread::spawn(move || {
         for notification in eventloop.iter() {
             match notification {
                 Ok(Incoming(evt)) => {
@@ -92,6 +92,6 @@ pub fn start_power_scrape_thread(config: Configuration, tx: Sender<PowerUsage>) 
                 }
             }
         }
-    });
+    })
 
 }
